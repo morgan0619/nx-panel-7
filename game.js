@@ -401,11 +401,21 @@
   /**
    * Touch/mouse: set line direction and endpoint from a board cell
    * (highlight + connector follow the finger).
+   * Dragging back to the start tile clears the direction so you can restart the line.
    */
   function extendSelectionTo(r, c) {
     if (gameOver || !lineStart || !inBounds(r, c)) return;
+
+    // Back on the starting tile → reset to a single-tile selection
+    if (r === lineStart.r && c === lineStart.c) {
+      lineDir = null;
+      cursor = { ...lineStart };
+      updateEquation();
+      return;
+    }
+
     const name = dirNameFromDelta(r - lineStart.r, c - lineStart.c);
-    if (!name) return;
+    if (!name) return; // not a straight 8-way line from start
     const v = DIR_VECTORS[name];
     lineDir = { ...v };
     cursor = { r, c };
@@ -548,7 +558,9 @@
   }
 
   function updateCancelButton() {
-    btnCancel.disabled = gameOver || (!lineStart && !hammerMode);
+    const canCancel = !gameOver && (!!lineStart || hammerMode);
+    btnCancel.disabled = !canCancel;
+    btnCancel.classList.toggle("ready", canCancel);
   }
 
   function hideOverlay() {
@@ -856,18 +868,48 @@
   });
 
   // --- Pointer Events (touch, stylus, mouse) ---
-  // Press tile → startSelection; drag → extendSelectionTo; release → confirmSelection
+  // Press → start; drag → extend/shrink; release → confirm if valid, otherwise cancel
   let pointerDown = null;
   let pointerSelecting = false;
 
   function onPointerDown(clientX, clientY) {
     if (gameOver) return;
     const cell = canvasToCell(clientX, clientY);
-    if (!cell) return;
+
+    // Tap empty board / miss while selecting → cancel and start over
+    if (!cell) {
+      if (lineStart || hammerMode) cancelSelection();
+      pointerDown = null;
+      pointerSelecting = false;
+      return;
+    }
+
     pointerDown = { ...cell, x: clientX, y: clientY };
 
     if (hammerMode) {
       startSelection(cell);
+      pointerDown = null;
+      return;
+    }
+
+    // Already mid-selection from a previous gesture: tap start or empty-ish restart
+    if (lineStart && !pointerSelecting) {
+      // Tap the start tile again → cancel
+      if (cell.r === lineStart.r && cell.c === lineStart.c) {
+        cancelSelection();
+        pointerDown = null;
+        return;
+      }
+      // Tap any other filled tile → abandon old line and start a new one there
+      if (grid[cell.r][cell.c] != null) {
+        cancelSelection();
+        startSelection(cell);
+        pointerSelecting = true;
+        return;
+      }
+      // Tap a hole → cancel
+      cancelSelection();
+      focusTile(cell.r, cell.c);
       pointerDown = null;
       return;
     }
@@ -882,7 +924,7 @@
       return;
     }
 
-    // Already selecting: drag/tap toward a cell extends the line
+    // Continuing an active drag selection
     extendSelectionTo(cell.r, cell.c);
     pointerSelecting = true;
   }
@@ -896,7 +938,6 @@
 
   function onPointerUp(clientX, clientY) {
     if (!pointerDown) return;
-    const start = pointerDown;
     pointerDown = null;
 
     if (!pointerSelecting || !lineStart) {
@@ -907,10 +948,12 @@
     const cell = canvasToCell(clientX, clientY);
     if (cell) extendSelectionTo(cell.r, cell.c);
 
-    const dist = Math.hypot(clientX - start.x, clientY - start.y);
-    // Release after a drag, or tap while a direction is set → confirm if valid
-    if (lineDir && (dist >= 10 || evaluateMatch(getSelection()).valid)) {
-      if (evaluateMatch(getSelection()).valid) confirmSelection();
+    const evalResult = evaluateMatch(getSelection());
+    if (evalResult.valid) {
+      confirmSelection();
+    } else {
+      // Don't leave a half-drawn invalid line stuck on screen — clear it
+      cancelSelection();
     }
 
     pointerSelecting = false;
@@ -946,6 +989,7 @@
 
   canvas.addEventListener("pointercancel", () => {
     pointerDown = null;
+    if (pointerSelecting && lineStart) cancelSelection();
     pointerSelecting = false;
   });
 
@@ -1076,7 +1120,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=9")
+        .register("sw.js?v=10")
         .then((reg) => reg.update())
         .catch(() => {
           /* file:// or unsupported — ignore */

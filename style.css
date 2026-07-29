@@ -301,6 +301,13 @@ html, body {
   cursor: not-allowed;
 }
 
+.cancel-btn.ready {
+  background: #8b3a3a;
+  border-color: #c45c5c;
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 120, 120, 0.25);
+}
+
 .cancel-btn:active:not(:disabled) {
   transform: translateY(1px);
 }
