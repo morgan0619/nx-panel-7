@@ -9,7 +9,7 @@
   const START_HAMMERS = 3;
   const START_ADD_ROWS = 3;
   const BEST_KEY = "morgans-game-best";
-  const SAVE_KEY = "morgans-game-save-v4";
+  const SAVE_KEY = "morgans-game-save-v5";
 
   const DIRS = [
     { dr: -1, dc: 0 },
@@ -1075,9 +1075,12 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => {
-        /* file:// or unsupported — ignore */
-      });
+      navigator.serviceWorker
+        .register("sw.js?v=8")
+        .then((reg) => reg.update())
+        .catch(() => {
+          /* file:// or unsupported — ignore */
+        });
     });
   }
 })();
