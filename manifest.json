@@ -1,0 +1,18 @@
+{
+  "name": "Morgan's Game",
+  "short_name": "Morgan's Game",
+  "description": "Match twins or numbers that add to 10 before the board fills.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#061228",
+  "theme_color": "#0b1a3a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b1a3a" />
+  <meta name="description" content="Morgan's Game — match twins or numbers that add to 10 before the board fills." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <title>Morgan's Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top-bar">
+      <div class="brand">Morgan's Game</div>
+      <div class="scores">
+        <div class="score-block">
+          <span class="label">Score</span>
+          <span id="score" class="value">0</span>
+        </div>
+        <div class="score-block">
+          <span class="label">Best</span>
+          <span id="best" class="value">0</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="play-area">
+      <aside class="side left">
+        <button type="button" id="btn-hammer" class="power-btn" title="Hammer (H / Y)">
+          <span class="icon hammer-icon" aria-hidden="true"></span>
+          <span class="power-label">Hammer</span>
+          <span class="hint">Y / H</span>
+          <span id="hammer-count" class="count">3</span>
+        </button>
+        <button type="button" id="btn-add-row" class="power-btn" title="Add Row (R / X)">
+          <span class="icon add-icon" aria-hidden="true">+</span>
+          <span class="power-label">Add Row</span>
+          <span class="hint">X / R</span>
+          <span id="add-row-count" class="count">3</span>
+        </button>
+      </aside>
+
+      <div class="board-wrap">
+        <canvas id="board" width="640" height="560" aria-label="Game board"></canvas>
+        <div class="board-actions">
+          <div id="equation" class="equation" aria-live="polite"></div>
+          <button type="button" id="btn-cancel" class="cancel-btn" title="Cancel selection (Esc / B)">Cancel</button>
+        </div>
+        <div id="overlay" class="overlay hidden" aria-hidden="true">
+          <div class="overlay-card">
+            <h2 id="overlay-title">Game Over</h2>
+            <p id="overlay-msg">The board filled up.</p>
+            <p class="overlay-score">Score: <span id="final-score">0</span></p>
+            <button type="button" id="btn-restart" class="primary-btn">Play Again</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side right">
+        <button type="button" id="btn-settings" class="icon-only" title="New game" aria-label="New game">New</button>
+        <div class="moves-panel">
+          <span class="label">Moves before next line</span>
+          <div class="moves-bar" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5">
+            <div id="moves-fill" class="moves-fill"></div>
+          </div>
+          <span id="moves-left" class="moves-num">5</span>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="help">
+      <p>Line up 2+ numbers that are the same, or add to 10. Cleared spaces can be skipped.</p>
+      <p class="controls">Touch: press, drag, release · Keyboard: arrows + Enter/Esc · Controller: D-pad + A/B</p>
+    </footer>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
