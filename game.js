@@ -1076,7 +1076,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=8")
+        .register("sw.js?v=9")
         .then((reg) => reg.update())
         .catch(() => {
           /* file:// or unsupported — ignore */

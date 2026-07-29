@@ -23,6 +23,7 @@ html, body {
   margin: 0;
   min-height: 100%;
   height: 100%;
+  height: 100dvh;
   background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
   color: var(--text);
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
@@ -34,11 +35,13 @@ html, body {
 #app {
   min-height: 100%;
   height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: calc(12px + var(--safe-top)) 12px calc(12px + var(--safe-bottom));
   max-width: 960px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .top-bar {
@@ -251,7 +254,9 @@ html, body {
 #board {
   width: min(100%, 640px);
   height: auto;
-  max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
+  aspect-ratio: 640 / 560;
+  object-fit: contain;
   border-radius: 18px;
   background: #071428;
   box-shadow: inset 0 0 0 3px #1c3f78, 0 10px 30px rgba(0, 0, 0, 0.35);
@@ -424,6 +429,132 @@ html, body {
   }
 
   #board {
-    max-height: calc(100vh - 280px);
+    max-height: calc(100dvh - 240px);
+  }
+
+  .help {
+    font-size: 0.7rem;
   }
 }
+
+/* Landscape phones / short screens: keep side chrome, grow the board */
+@media (orientation: landscape) and (max-height: 560px) {
+  #app {
+    max-width: none;
+    padding: calc(4px + var(--safe-top)) 8px calc(4px + var(--safe-bottom));
+  }
+
+  .top-bar {
+    margin-bottom: 2px;
+    gap: 8px;
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+
+  .score-block .label {
+    font-size: 0.55rem;
+  }
+
+  .score-block .value {
+    font-size: 1rem;
+  }
+
+  .help {
+    display: none;
+  }
+
+  .play-area {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .side,
+  .side.left,
+  .side.right,
+  .board-wrap {
+    order: unset;
+    width: auto;
+  }
+
+  .side {
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    height: 100%;
+  }
+
+  .side.right {
+    align-items: flex-end;
+  }
+
+  .power-btn {
+    width: 58px;
+    padding: 6px 4px;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .power-btn .power-label,
+  .power-btn .hint {
+    font-size: 0.5rem;
+  }
+
+  .moves-panel {
+    width: 72px;
+    margin-top: 0;
+  }
+
+  .moves-panel .label {
+    font-size: 0.5rem;
+  }
+
+  .moves-bar {
+    height: 8px;
+  }
+
+  .moves-num {
+    font-size: 0.9rem;
+  }
+
+  .icon-only {
+    height: 28px;
+    min-width: 36px;
+    padding: 0 8px;
+    font-size: 0.65rem;
+  }
+
+  .board-wrap {
+    height: 100%;
+    justify-content: center;
+  }
+
+  #board {
+    /* Fill height first; width follows aspect ratio — no vertical squash */
+    width: auto;
+    height: min(100%, calc(100dvh - 56px));
+    max-width: 100%;
+    max-height: calc(100dvh - 56px);
+    aspect-ratio: 640 / 560;
+  }
+
+  .board-actions {
+    margin-top: 2px;
+    min-height: 1.25rem;
+    gap: 8px;
+  }
+
+  .equation {
+    font-size: 0.8rem;
+    min-height: 1.1rem;
+  }
+
+  .cancel-btn {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+  }
+}
+
