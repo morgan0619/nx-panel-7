@@ -827,6 +827,15 @@
   };
 
   window.addEventListener("keydown", (e) => {
+    // Let browser shortcuts through (Cmd/Ctrl+Shift+R refresh, etc.)
+    if (e.metaKey || e.ctrlKey) {
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        newGame(false);
+      }
+      return;
+    }
+
     const dir = KEY_TO_DIR[e.key];
     if (dir) {
       e.preventDefault();
@@ -851,10 +860,6 @@
     if (e.key === "r" || e.key === "R") {
       manualAddRow();
       return;
-    }
-    if (e.key === "n" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      newGame(false);
     }
   });
 
@@ -1120,7 +1125,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=10")
+        .register("sw.js?v=11")
         .then((reg) => reg.update())
         .catch(() => {
           /* file:// or unsupported — ignore */
