@@ -4,12 +4,12 @@
   // ---------- Constants ----------
   const COLS = 8;
   const ROWS = 7;
-  const START_FILLED_ROWS = 7; // full board — space comes from clearing lines
+  const START_FILLED_ROWS = 5; // 2 empty rows on top for rising-line headroom
   const MOVES_PER_LINE = 5;
   const START_HAMMERS = 3;
   const START_ADD_ROWS = 3;
   const BEST_KEY = "morgans-game-best";
-  const SAVE_KEY = "morgans-game-save-v3";
+  const SAVE_KEY = "morgans-game-save-v4";
 
   const DIRS = [
     { dr: -1, dc: 0 },
