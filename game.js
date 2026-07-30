@@ -390,12 +390,30 @@
       if (back) cursor = { r: back.r, c: back.c };
       else cursor = { ...lineStart };
     } else {
-      // New direction from the start tile
-      lineDir = { ...v };
+      // D-pad often can't hold two directions: Up then Left should become up-left
+      const merged = mergeToDiagonal(lineDir, v);
+      lineDir = merged ? { ...merged } : { ...v };
       const next = findNextActive(lineStart, lineDir);
       cursor = next ? { r: next.r, c: next.c } : { ...lineStart };
     }
     updateEquation();
+  }
+
+  /** Combine a cardinal line with a perpendicular press into a diagonal. */
+  function mergeToDiagonal(current, incoming) {
+    if (!current || !incoming) return null;
+    const curCardinal =
+      (current.dr !== 0 && current.dc === 0) || (current.dr === 0 && current.dc !== 0);
+    const inCardinal =
+      (incoming.dr !== 0 && incoming.dc === 0) || (incoming.dr === 0 && incoming.dc !== 0);
+    if (!curCardinal || !inCardinal) return null;
+    // Same axis (up then down, etc.) — not a diagonal
+    if (current.dr !== 0 && incoming.dr !== 0) return null;
+    if (current.dc !== 0 && incoming.dc !== 0) return null;
+    return {
+      dr: current.dr !== 0 ? current.dr : incoming.dr,
+      dc: current.dc !== 0 ? current.dc : incoming.dc,
+    };
   }
 
   /**
@@ -1001,25 +1019,72 @@
   // --- Gamepad API (D-pad + A/B, with menu-style repeat delay) ---
   const PAD_INITIAL_DELAY = 280;
   const PAD_REPEAT_DELAY = 120;
+  const PAD_DIAGONAL_GRACE_MS = 320; // hat D-pads can't hold two dirs; remember briefly
   const padPrev = { a: false, b: false, x: false, y: false };
   let padRepeatAt = 0;
   let padHeldDir = null;
+  const padCardinalAt = { up: 0, down: 0, left: 0, right: 0 };
 
-  function gamepadDirection(gp) {
-    const up = !!(gp.buttons[12] && gp.buttons[12].pressed) || gp.axes[1] < -0.5;
-    const down = !!(gp.buttons[13] && gp.buttons[13].pressed) || gp.axes[1] > 0.5;
-    const left = !!(gp.buttons[14] && gp.buttons[14].pressed) || gp.axes[0] < -0.5;
-    const right = !!(gp.buttons[15] && gp.buttons[15].pressed) || gp.axes[0] > 0.5;
+  function stickEightWay(gp) {
+    const x = gp.axes[0] || 0;
+    const y = gp.axes[1] || 0;
+    if (Math.hypot(x, y) < 0.55) return null;
+    // 8 sectors from atan2 (y down, x right)
+    const sector = (Math.round(Math.atan2(y, x) / (Math.PI / 4)) + 8) % 8;
+    return [
+      "right",
+      "down-right",
+      "down",
+      "down-left",
+      "left",
+      "up-left",
+      "up",
+      "up-right",
+    ][sector];
+  }
+
+  function gamepadDirection(gp, ts) {
+    const upBtn = !!(gp.buttons[12] && gp.buttons[12].pressed);
+    const downBtn = !!(gp.buttons[13] && gp.buttons[13].pressed);
+    const leftBtn = !!(gp.buttons[14] && gp.buttons[14].pressed);
+    const rightBtn = !!(gp.buttons[15] && gp.buttons[15].pressed);
+
+    if (upBtn) padCardinalAt.up = ts;
+    if (downBtn) padCardinalAt.down = ts;
+    if (leftBtn) padCardinalAt.left = ts;
+    if (rightBtn) padCardinalAt.right = ts;
+
+    const recent = (name) => ts - padCardinalAt[name] < PAD_DIAGONAL_GRACE_MS;
+    let up = upBtn || recent("up");
+    let down = downBtn || recent("down");
+    let left = leftBtn || recent("left");
+    let right = rightBtn || recent("right");
+
+    // Prefer live opposites over stale grace
+    if (upBtn && down) down = false;
+    if (downBtn && up) up = false;
+    if (leftBtn && right) right = false;
+    if (rightBtn && left) left = false;
+    if (up && down) {
+      up = upBtn;
+      down = downBtn;
+    }
+    if (left && right) {
+      left = leftBtn;
+      right = rightBtn;
+    }
 
     if (up && left) return "up-left";
     if (up && right) return "up-right";
     if (down && left) return "down-left";
     if (down && right) return "down-right";
-    if (up && !down) return "up";
-    if (down && !up) return "down";
-    if (left && !right) return "left";
-    if (right && !left) return "right";
-    return null;
+    if (upBtn && !downBtn) return "up";
+    if (downBtn && !upBtn) return "down";
+    if (leftBtn && !rightBtn) return "left";
+    if (rightBtn && !leftBtn) return "right";
+
+    // Left stick: true 8-way (better diagonals than axis thresholds)
+    return stickEightWay(gp);
   }
 
   function readGamepad(ts) {
@@ -1030,7 +1095,7 @@
       return;
     }
 
-    const dirNow = gamepadDirection(gp);
+    const dirNow = gamepadDirection(gp, ts);
     if (dirNow) {
       if (padHeldDir !== dirNow) {
         padHeldDir = dirNow;
@@ -1125,7 +1190,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=11")
+        .register("sw.js?v=12")
         .then((reg) => reg.update())
         .catch(() => {
           /* file:// or unsupported — ignore */
