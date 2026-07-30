@@ -406,15 +406,23 @@
       return;
     }
 
-    if (v.dr === lineDir.dr && v.dc === lineDir.dc) {
+    // Same direction, OR a cardinal that is part of the current diagonal
+    // (D-pad can't hold two buttons — Up while on up-left should keep extending)
+    if (
+      (v.dr === lineDir.dr && v.dc === lineDir.dc) ||
+      isComponentOfDiagonal(lineDir, v)
+    ) {
       const next = findNextActive(cursor, lineDir);
       if (next) cursor = { r: next.r, c: next.c };
       else {
-        const nr = cursor.r + v.dr;
-        const nc = cursor.c + v.dc;
+        const nr = cursor.r + lineDir.dr;
+        const nc = cursor.c + lineDir.dc;
         if (inBounds(nr, nc)) cursor = { r: nr, c: nc };
       }
-    } else if (v.dr === -lineDir.dr && v.dc === -lineDir.dc) {
+    } else if (
+      (v.dr === -lineDir.dr && v.dc === -lineDir.dc) ||
+      isOppositeComponentOfDiagonal(lineDir, v)
+    ) {
       const back = findPrevActive(cursor, lineDir, lineStart);
       if (back) cursor = { r: back.r, c: back.c };
       else cursor = { ...lineStart };
@@ -428,14 +436,35 @@
     updateEquation();
   }
 
+  function isDiagonal(d) {
+    return !!d && d.dr !== 0 && d.dc !== 0;
+  }
+
+  function isCardinal(d) {
+    return (
+      !!d &&
+      ((d.dr !== 0 && d.dc === 0) || (d.dr === 0 && d.dc !== 0))
+    );
+  }
+
+  /** Up/Left while the line is already up-left → keep extending that diagonal. */
+  function isComponentOfDiagonal(line, incoming) {
+    if (!isDiagonal(line) || !isCardinal(incoming)) return false;
+    if (incoming.dr !== 0) return incoming.dr === line.dr;
+    return incoming.dc === line.dc;
+  }
+
+  /** Down/Right while the line is up-left → shrink back along that diagonal. */
+  function isOppositeComponentOfDiagonal(line, incoming) {
+    if (!isDiagonal(line) || !isCardinal(incoming)) return false;
+    if (incoming.dr !== 0) return incoming.dr === -line.dr;
+    return incoming.dc === -line.dc;
+  }
+
   /** Combine a cardinal line with a perpendicular press into a diagonal. */
   function mergeToDiagonal(current, incoming) {
     if (!current || !incoming) return null;
-    const curCardinal =
-      (current.dr !== 0 && current.dc === 0) || (current.dr === 0 && current.dc !== 0);
-    const inCardinal =
-      (incoming.dr !== 0 && incoming.dc === 0) || (incoming.dr === 0 && incoming.dc !== 0);
-    if (!curCardinal || !inCardinal) return null;
+    if (!isCardinal(current) || !isCardinal(incoming)) return null;
     // Same axis (up then down, etc.) — not a diagonal
     if (current.dr !== 0 && incoming.dr !== 0) return null;
     if (current.dc !== 0 && incoming.dc !== 0) return null;
@@ -1222,7 +1251,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=14")
+        .register("sw.js?v=15")
         .then((reg) => reg.update())
         .catch(() => {
           /* file:// or unsupported — ignore */

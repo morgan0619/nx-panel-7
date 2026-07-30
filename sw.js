@@ -1,4 +1,4 @@
-const CACHE = "morgans-game-v14";
+const CACHE = "morgans-game-v15";
 const ASSETS = [
   "./",
   "./index.html",
