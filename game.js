@@ -8,8 +8,9 @@
   const MOVES_PER_LINE = 5;
   const START_HAMMERS = 3;
   const START_ADD_ROWS = 3;
+  const LINES_PER_HAMMER = 3; // clear this many full rows → +1 hammer
   const BEST_KEY = "morgans-game-best";
-  const SAVE_KEY = "morgans-game-save-v5";
+  const SAVE_KEY = "morgans-game-save-v6";
 
   const DIRS = [
     { dr: -1, dc: 0 },
@@ -68,6 +69,7 @@
   let movesLeft = MOVES_PER_LINE;
   let hammers = START_HAMMERS;
   let addRows = START_ADD_ROWS;
+  let linesTowardHammer = 0; // 0..LINES_PER_HAMMER-1 progress toward next hammer
   let hammerMode = false;
   let gameOver = false;
   let animPhase = 0;
@@ -115,6 +117,7 @@
             movesLeft = data.movesLeft ?? MOVES_PER_LINE;
             hammers = data.hammers ?? START_HAMMERS;
             addRows = data.addRows ?? START_ADD_ROWS;
+            linesTowardHammer = data.linesTowardHammer ?? 0;
             cursor = data.cursor || { r: 3, c: 3 };
             gameOver = false;
             lineStart = null;
@@ -140,6 +143,7 @@
     movesLeft = MOVES_PER_LINE;
     hammers = START_HAMMERS;
     addRows = START_ADD_ROWS;
+    linesTowardHammer = 0;
     cursor = { r: ROWS - 3, c: Math.floor(COLS / 2) };
     lineStart = null;
     lineDir = null;
@@ -164,6 +168,7 @@
         movesLeft,
         hammers,
         addRows,
+        linesTowardHammer,
         cursor,
         gameOver,
       })
@@ -270,11 +275,35 @@
   }
 
   function clearCells(cells) {
+    const touchedRows = new Set(cells.map((c) => c.r));
     for (const cell of cells) {
       grid[cell.r][cell.c] = null;
     }
+    let lines = 0;
+    for (const r of touchedRows) {
+      if (grid[r].every((v) => v == null)) lines++;
+    }
     // Leave holes in place; only collapse when a whole row is empty
     collapseFullyEmptyRows();
+    if (lines > 0) awardHammersForClearedLines(lines);
+  }
+
+  function awardHammersForClearedLines(lines) {
+    if (lines <= 0) return;
+    linesTowardHammer += lines;
+    let gained = 0;
+    while (linesTowardHammer >= LINES_PER_HAMMER) {
+      linesTowardHammer -= LINES_PER_HAMMER;
+      hammers += 1;
+      gained += 1;
+    }
+    updateHud();
+    if (gained > 0) {
+      equationEl.classList.remove("invalid");
+      equationEl.classList.add("valid");
+      equationEl.textContent =
+        gained === 1 ? "+1 hammer" : `+${gained} hammers`;
+    }
   }
 
   function scoreMatch(cells, kind) {
@@ -537,8 +566,11 @@
     hammers -= 1;
     hammerMode = false;
     btnHammer.classList.remove("active");
+    const row = cursor.r;
     grid[cursor.r][cursor.c] = null;
+    const clearedRow = grid[row].every((v) => v == null) ? 1 : 0;
     collapseFullyEmptyRows();
+    if (clearedRow) awardHammersForClearedLines(clearedRow);
     snapCursorToNearest();
     afterSuccessfulAction();
     updateEquation();
@@ -1190,7 +1222,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=13")
+        .register("sw.js?v=14")
         .then((reg) => reg.update())
         .catch(() => {
           /* file:// or unsupported — ignore */
