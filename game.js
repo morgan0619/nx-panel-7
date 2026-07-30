@@ -558,12 +558,12 @@
   }
 
   function manualAddRow() {
-    if (gameOver || addRows <= 0) return;
-    addRows -= 1;
+    if (gameOver) return;
     lineStart = null;
     lineDir = null;
     hammerMode = false;
     btnHammer.classList.remove("active");
+    // Unlimited until the board has no room — pushNewRow ends the game if full
     if (!pushNewRow()) {
       updateHud();
       updateCancelButton();
@@ -604,11 +604,11 @@
     scoreEl.textContent = String(score);
     bestEl.textContent = String(best);
     hammerCountEl.textContent = String(hammers);
-    addRowCountEl.textContent = String(addRows);
+    addRowCountEl.textContent = "∞";
     movesLeftEl.textContent = String(movesLeft);
     movesFillEl.style.width = `${(movesLeft / MOVES_PER_LINE) * 100}%`;
     btnHammer.disabled = hammers <= 0 || gameOver;
-    btnAddRow.disabled = addRows <= 0 || gameOver;
+    btnAddRow.disabled = gameOver;
     const bar = movesFillEl.parentElement;
     if (bar) {
       bar.setAttribute("aria-valuenow", String(movesLeft));
@@ -1190,7 +1190,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=12")
+        .register("sw.js?v=13")
         .then((reg) => reg.update())
         .catch(() => {
           /* file:// or unsupported — ignore */
